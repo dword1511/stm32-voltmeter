@@ -29,12 +29,6 @@
 #define SYSCLK_FREQ       (2000000)
 #define PWR_TIME_OUT_SECS (20)
 
-static void debug_led(void) {
-  gpio_clear(GPIOB, GPIO1);
-  gpio_set_output_options(GPIOB, GPIO_OTYPE_PP, GPIO_OSPEED_LOW, GPIO1);
-  gpio_mode_setup(GPIOB, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO1);
-}
-
 
 /* BEGIN SYSTICK */
 
@@ -71,7 +65,7 @@ void sys_tick_handler(void) {
 #define ADC_INPUT_PIN       (GPIO1)
 #define ADC_INPUT_CHANNEL   (9)
 
-#define ADC_OVERSAMPLE      (4)
+#define ADC_OVERSAMPLE      (16)
 #define ADC_RANGE1_MAX      ((1 << 12) - (1 << 8))  /* Avoid top 5% */
 
 #define ADC_TO_MV_RANGE1(x) ((x))                   /* PA13 open  */
@@ -85,7 +79,7 @@ static volatile uint32_t voltage_mv;
 static uint16_t adc_read_raw(uint8_t ch);
 
 static void adc_setup(void) {
-  uint16_t   i;
+  uint16_t  i;
   uint32_t  vref_muv, vref_lsbs = 0;
 
   gpio_mode_setup(ADC_INPUT_BANK, GPIO_MODE_ANALOG, GPIO_PUPD_NONE, ADC_INPUT_PIN);
@@ -182,7 +176,7 @@ static void adc_read(void) {
 
 //#define DISP_COM_ANODE
 
-static const    uint8_t   segment_font[10]  = {0x3f, 0x06, 0x46, 0x64, 0x00, 0x00, 0x00, 0x00, 0x7f, 0x6f}; /* 0-9, active high */
+static const    uint8_t   segment_font[10]  = {0x3f, 0x06, 0x5b, 0x4f, 0x66, 0x6d, 0x7d, 0x07, 0x7f, 0x6f}; /* 0-9, active high */
 static volatile uint8_t   blinker           = 0;
 
 static void disp_setup(void) {
@@ -286,9 +280,11 @@ static void pwr_turn_off(void) {
 
   /* According to ST App note... */
   SCB_SCR |= SCB_SCR_SLEEPDEEP;
-  pwr_set_standby_mode(); /* Only sets PDDS... Well, others are universal to CM3 anyway. */
+  /* Only sets PDDS... Well, others are universal to CM3 anyway. */
+  pwr_set_standby_mode();
   pwr_clear_wakeup_flag();
-  asm("wfi"); /* Enter standby */
+  /* Enter standby */
+  asm("wfi");
 }
 
 /* END PWR */
@@ -298,6 +294,21 @@ static void post_delay(void) {
 
   for (i = 0; i < 50000; i ++) {
     asm("nop");
+  }
+}
+
+static void __attribute__((unused)) disp_test(void) {
+  while (true) {
+    voltage_mv = 01;
+    post_delay();
+    voltage_mv = 23;
+    post_delay();
+    voltage_mv = 45;
+    post_delay();
+    voltage_mv = 67;
+    post_delay();
+    voltage_mv = 89;
+    post_delay();
   }
 }
 
@@ -313,11 +324,13 @@ int main(void) {
   voltage_mv = 88888;
   post_delay();
   voltage_mv =     0;
-  post_delay();
+
+  //disp_test();
 
   /* Main loop */
   while (uptime_ms < (PWR_TIME_OUT_SECS * 1000)) {
     adc_read();
+    post_delay();
   }
 
   pwr_turn_off();
