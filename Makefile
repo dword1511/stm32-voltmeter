@@ -1,6 +1,9 @@
 PROGRAM     = stm32-voltmeter
-OBJS        = main.o
+OBJS        = main.o tick.o power.o
 CROSS      ?= arm-none-eabi-
+
+include config.mk
+include board.mk
 
 ###############################################################################
 
@@ -19,10 +22,6 @@ HEX         = $(PROGRAM).hex
 MAP         = $(PROGRAM).map
 DMP         = $(PROGRAM).out
 
-ARCH_FLAGS  = -DSTM32F0 -mthumb -mcpu=cortex-m0 -msoft-float
-LDSCRIPT    = libopencm3/lib/stm32/f0/stm32f04xz6.ld
-OPENCM3_MK  = lib/stm32/f0
-LIBOPENCM3  = libopencm3/lib/libopencm3_stm32f0.a
 
 CFLAGS     += -O2 -Wall -g3 -gdwarf
 # Turning aggressive loop optimizations off since it does not work for loops longer than certain iterations
@@ -68,11 +67,11 @@ $(LIBOPENCM3):
 .PHONY: clean distclean size symbols flash
 
 clean:
-	rm -f $(OBJS) $(DOCS) $(ELF) $(HEX) $(BIN) $(MAP) $(DMP)
+	rm -f $(OBJS) $(ELF) $(HEX) $(BIN) $(MAP) $(DMP)
 
 distclean: clean
 	make -C libopencm3 clean
-	rm -f *~ *.swp *.hex log.out
+	rm -f *.o *~ *.swp *.hex
 
 # These targets want clean terminal output
 size: $(ELF)
