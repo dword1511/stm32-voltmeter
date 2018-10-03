@@ -18,40 +18,37 @@
 #define DISP_PIN_COM2   13
 #define DISP_PIN_COM3   14
 #define DISP_COM_ANODE
-#define DISP_SCAN_FREQ  20000 // FIXME: remove this!
+//TODO: duty-cycle support
 */
 
-
-#ifndef DISP_SCAN_FREQ
-#define DISP_SCAN_FREQ  (20000)
-#endif
 
 #define DISP_COM_0      (1 << DISP_PIN_COM0)
 #define DISP_COM_1      (1 << DISP_PIN_COM1)
 #define DISP_COM_2      (1 << DISP_PIN_COM2)
 #define DISP_COM_3      (1 << DISP_PIN_COM3)
+#define DISP_CATHODE(c) ((~c) & 0xff00)
 
 #define DISP_FONT_DP    (1 <<  7)
 #define DISP_FONT_E     (0x79)
 #define DISP_FONT_BLANK (0x00)
 
 
-static const    uint8_t segment_font[10] = {0x3f, 0x06, 0x5b, 0x4f, 0x66, 0x6d, 0x7d, 0x07, 0x7f, 0x6f}; /* LED font 0-9, active high */
-static volatile uint8_t digit[4]         = {0, 0, 0, 0}; /* Rendered */
+static const    uint8_t   segment_font[10] = {0x3f, 0x06, 0x5b, 0x4f, 0x66, 0x6d, 0x7d, 0x07, 0x7f, 0x6f}; /* LED font 0-9, active high */
+static const    uint16_t  coms[4]          = {
+#ifdef DISP_COM_ANODE
+  DISP_COM_0, DISP_COM_1, DISP_COM_2, DISP_COM_3,
+#else
+  DISP_CATHODE(DISP_COM_0), DISP_CATHODE(DISP_COM_1), DISP_CATHODE(DISP_COM_2), DISP_CATHODE(DISP_COM_3),
+#endif
+};
+static volatile uint8_t   digit[4]         = {DISP_FONT_BLANK, DISP_FONT_BLANK, DISP_FONT_BLANK, DISP_FONT_BLANK}; /* Rendered */
+static volatile uint8_t   current_digit    = 0;
 
 
 void disp_setup(void) {
   gpio_port_write(DISP_GPIO_BANK, DISP_FONT_BLANK);
   gpio_set_output_options(DISP_GPIO_BANK, GPIO_OTYPE_PP, GPIO_OSPEED_LOW, GPIO_ALL);
   gpio_mode_setup(DISP_GPIO_BANK, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO_ALL);
-}
-
-static void disp_delay(void) {
-  static uint32_t i;
-
-  for (i = 0; i < (rcc_ahb_frequency / DISP_SCAN_FREQ); i ++) {
-    asm("nop");
-  }
 }
 
 void disp_update(uint32_t voltage_mv, bool blinker) {
@@ -91,24 +88,13 @@ void disp_update(uint32_t voltage_mv, bool blinker) {
 }
 
 void disp_refresh(void) {
+  current_digit ++;
+  if (current_digit > 3) {
+    current_digit = 0;
+  }
 #ifdef DISP_COM_ANODE
-  gpio_port_write(DISP_GPIO_BANK, ((~digit[0]) & 0x00ff) | DISP_COM_0);
-  disp_delay();
-  gpio_port_write(DISP_GPIO_BANK, ((~digit[1]) & 0x00ff) | DISP_COM_1);
-  disp_delay();
-  gpio_port_write(DISP_GPIO_BANK, ((~digit[2]) & 0x00ff) | DISP_COM_2);
-  disp_delay();
-  gpio_port_write(DISP_GPIO_BANK, ((~digit[3]) & 0x00ff) | DISP_COM_3);
-  disp_delay();
+  gpio_port_write(DISP_GPIO_BANK, ((~digit[current_digit]) & 0x00ff) | coms[current_digit]);
 #else /* DISP_COM_ANODE */
-  gpio_port_write(DISP_GPIO_BANK, digit[0] | ((~DISP_COM_0) & 0xff00));
-  disp_delay();
-  gpio_port_write(DISP_GPIO_BANK, digit[1] | ((~DISP_COM_1) & 0xff00));
-  disp_delay();
-  gpio_port_write(DISP_GPIO_BANK, digit[2] | ((~DISP_COM_2) & 0xff00));
-  disp_delay();
-  gpio_port_write(DISP_GPIO_BANK, digit[3] | ((~DISP_COM_3) & 0xff00));
-  disp_delay();
+  gpio_port_write(DISP_GPIO_BANK, digit[current_digit] | coms[current_digit]);
 #endif /* DISP_COM_ANODE */
-  gpio_port_write(DISP_GPIO_BANK, DISP_FONT_BLANK);
 }

@@ -45,7 +45,6 @@
 #define PWR_CSR_VREFINTRDY  (1 << 3)
 
 static volatile uint16_t muv_per_lsb;
-static volatile uint32_t voltage_mv;
 
 static uint16_t adc_read_raw(uint8_t ch);
 
@@ -103,7 +102,7 @@ static uint16_t adc_read_raw(uint8_t ch) {
   return adc_read_regular(ADC1);
 }
 
-static void adc_read(void) {
+static uint32_t adc_read(void) {
   uint8_t   i;
   uint16_t  sample;
   uint32_t  total;
@@ -126,9 +125,9 @@ static void adc_read(void) {
     for (i = 0; i < ADC_OVERSAMPLE; i ++) {
       total += adc_read_raw(ADC_INPUT_CHANNEL);
     }
-    voltage_mv = ADC_TO_MV_RANGE2(total / ADC_OVERSAMPLE);
+    return ADC_TO_MV_RANGE2(total / ADC_OVERSAMPLE);
   } else {
-    voltage_mv = ADC_TO_MV_RANGE1(total / ADC_OVERSAMPLE);
+    return ADC_TO_MV_RANGE1(total / ADC_OVERSAMPLE);
   }
 }
 
@@ -145,41 +144,44 @@ static void post_delay(void) {
 
 static void __attribute__((unused)) disp_test(void) {
   while (true) {
-    voltage_mv = 01;
+    disp_update(01, false);
     post_delay();
-    voltage_mv = 23;
+    disp_update(23, true);
     post_delay();
-    voltage_mv = 45;
+    disp_update(45, false);
     post_delay();
-    voltage_mv = 67;
+    disp_update(67, true);
     post_delay();
-    voltage_mv = 89;
+    disp_update(89, false);
     post_delay();
   }
 }
 
 int main(void) {
+  uint32_t mvolts = 0;
+
   power_setup();
   disp_setup();
   tick_setup();
   adc_setup();
 
   /* Power on display test */
-  voltage_mv =  8888;
+  disp_update( 8888, true);
   post_delay();
-  voltage_mv = 88888;
+  disp_update(88888, true); /* Also tests rounding */
   post_delay();
-  voltage_mv =     0;
+  disp_update(mvolts, false);
 
   //disp_test();
 
   /* Main loop */
   while (!tick_auto_poweroff()) {
-    adc_read();
+    disp_update(mvolts, true);
+    mvolts = adc_read();
+    disp_update(mvolts, false);
     post_delay();
   }
 
   power_off();
   return 0;
 }
-

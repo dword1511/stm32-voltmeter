@@ -7,6 +7,7 @@ CFLAGS  += -DDISP_GPIO_BANK=GPIOA -DDISP_PIN_COM0=9 -DDISP_PIN_COM1=10 -DDISP_PI
 OBJS    += disp-led4d.o
 
 # Tell tick system that display needs refresh
-CFLAGS  += -DDISP_NEEDS_REFRESH -DTICK_HZ=200
+# 600HZ tick = 150HZ refresh rate (as we have 4 digits)
+CFLAGS  += -DDISP_NEEDS_REFRESH -DTICK_HZ=600
 
 include board-stm32f0.mk

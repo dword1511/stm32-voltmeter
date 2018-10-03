@@ -1,11 +1,22 @@
 #include <libopencm3/cm3/scb.h>
 
 #include <libopencm3/stm32/pwr.h>
+#include <libopencm3/stm32/gpio.h>
 
 #include "power.h"
 
 
 void power_off(void) {
+  /* Stop GPIO (and display) */
+  gpio_mode_setup(GPIOA, GPIO_MODE_ANALOG, GPIO_PUPD_NONE, GPIO_ALL);
+  gpio_mode_setup(GPIOB, GPIO_MODE_ANALOG, GPIO_PUPD_NONE, GPIO_ALL);
+  //gpio_mode_setup(GPIOC, GPIO_MODE_ANALOG, GPIO_PUPD_NONE, GPIO_ALL);
+  //gpio_mode_setup(GPIOD, GPIO_MODE_ANALOG, GPIO_PUPD_NONE, GPIO_ALL);
+  //gpio_mode_setup(GPIOE, GPIO_MODE_ANALOG, GPIO_PUPD_NONE, GPIO_ALL);
+  //gpio_mode_setup(GPIOF, GPIO_MODE_ANALOG, GPIO_PUPD_NONE, GPIO_ALL);
+  //gpio_mode_setup(GPIOG, GPIO_MODE_ANALOG, GPIO_PUPD_NONE, GPIO_ALL);
+  //gpio_mode_setup(GPIOH, GPIO_MODE_ANALOG, GPIO_PUPD_NONE, GPIO_ALL);
+
   pwr_disable_power_voltage_detect();
 
   /* According to ST App note... */
