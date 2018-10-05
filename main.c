@@ -72,7 +72,7 @@ static void adc_setup(void) {
   adc_power_on(ADC1);
 
   /* Wait for ADC starting up. */
-  for (i = 0; i < 40000; i ++) {
+  for (i = 0; i < (rcc_apb1_frequency >> 6); i ++) {
     asm("nop");
   }
 
@@ -137,7 +137,7 @@ static uint32_t adc_read(void) {
 static void post_delay(void) {
   static uint32_t i;
 
-  for (i = 0; i < 50000; i ++) {
+  for (i = 0; i < (rcc_apb1_frequency >> 6); i ++) {
     asm("nop");
   }
 }
@@ -162,6 +162,7 @@ int main(void) {
 
   power_setup();
   disp_setup();
+  disp_update(0, true);
   tick_setup();
   adc_setup();
 
@@ -172,7 +173,7 @@ int main(void) {
   post_delay();
   disp_update(mvolts, false);
 
-  //disp_test();
+  //disp_test(); // TODO: CONFIG_DO_DISPTEST
 
   /* Main loop */
   while (!tick_auto_poweroff()) {
