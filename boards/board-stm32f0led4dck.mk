@@ -5,7 +5,10 @@
 
 LDSCRIPT = libopencm3/lib/stm32/f0/stm32f03xz6.ld
 
-CFLAGS  += -DDISP_GPIO_BANK=GPIOA -DDISP_PIN_COM0=9 -DDISP_PIN_COM1=10 -DDISP_PIN_COM2=13 -DDISP_PIN_COM3=14
+CFLAGS  += -DDISP_GPIO_BANK=GPIOA -DDISP_PIN_COM0=9 -DDISP_PIN_COM1=10 -DDISP_PIN_COM2=11 -DDISP_PIN_COM3=12
+
 
 include board-stm32f0.mk
 include disp-led4d.mk
+
+flash: flash-stlink

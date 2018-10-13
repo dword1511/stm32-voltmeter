@@ -1,9 +1,7 @@
 PROGRAM     = stm32-voltmeter
 OBJS        = main.o tick.o power.o
 CROSS      ?= arm-none-eabi-
-
-include config.mk
-include board.mk
+SERIAL     ?= /dev/ttyUSB0
 
 ###############################################################################
 
@@ -41,6 +39,9 @@ LDLIBS     += $(LIBOPENCM3) -lc -lgcc
 
 
 all: $(LIBOPENCM3) $(BIN) $(HEX) $(DMP) size
+
+include config.mk
+include board.mk
 
 $(ELF): $(LDSCRIPT) $(OBJS)
 	$(CC) -o $@ $(LDFLAGS) $(OBJS) $(LDLIBS)
@@ -82,5 +83,11 @@ size: $(ELF)
 symbols: $(ELF)
 	@$(NM) --demangle --size-sort -S $< | grep -v ' [bB] '
 
-flash: $(BIN)
-	dfu-util -a 0 -d 0483:df11 -s 0x08000000:leave -D $(BIN)
+flash-dfu: $(BIN)
+	dfu-util -a 0 -d 0483:df11 -s 0x08000000:leave -D $<
+
+flash-stlink: $(HEX)
+	st-flash --reset --format ihex write $<
+
+flash-isp: $(HEX)
+	stm32flash -w $< -v $(SERIAL)
