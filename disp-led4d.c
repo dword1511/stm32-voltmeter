@@ -18,7 +18,7 @@
 #define DISP_PIN_COM2   13
 #define DISP_PIN_COM3   14
 #define DISP_COM_ANODE
-//TODO: duty-cycle support
+#define DISP_DUTY       100 // Additional dimming
 */
 
 
@@ -31,6 +31,14 @@
 #define DISP_FONT_DP    (1 <<  7)
 #define DISP_FONT_E     (0x79)
 #define DISP_FONT_BLANK (0x00)
+
+#if (DISP_DUTY > 100) || (DISP_DUTY < 0)
+#error "DISP_DUTY shoud be in [0, 100]"
+#endif
+#ifndef DISP_DUTY
+#define DISP_DUTY       100
+#endif
+#define DISP_EXTRAS     (4 * (100 - DISP_DUTY) / DISP_DUTY)
 
 
 static const    uint8_t   segment_font[10] = {0x3f, 0x06, 0x5b, 0x4f, 0x66, 0x6d, 0x7d, 0x07, 0x7f, 0x6f}; /* LED font 0-9, active high */
@@ -89,12 +97,16 @@ void disp_update(uint32_t voltage_mv, bool blinker) {
 
 void disp_refresh(void) {
   current_digit ++;
-  if (current_digit > 3) {
+  if (current_digit > (3 + DISP_EXTRAS)) {
     current_digit = 0;
   }
+  if (current_digit < 4) {
 #ifdef DISP_COM_ANODE
-  gpio_port_write(DISP_GPIO_BANK, ((~digit[current_digit]) & 0x00ff) | coms[current_digit]);
+    gpio_port_write(DISP_GPIO_BANK, ((~digit[current_digit]) & 0x00ff) | coms[current_digit]);
 #else /* DISP_COM_ANODE */
-  gpio_port_write(DISP_GPIO_BANK, digit[current_digit] | coms[current_digit]);
+    gpio_port_write(DISP_GPIO_BANK, digit[current_digit] | coms[current_digit]);
 #endif /* DISP_COM_ANODE */
+  } else {
+    gpio_port_write(DISP_GPIO_BANK, DISP_FONT_BLANK);
+  }
 }

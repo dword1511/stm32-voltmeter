@@ -7,7 +7,7 @@ extern void disp_setup(void);
 extern void disp_update(uint32_t voltage_mv, bool blinker);
 
 #ifdef DISP_NEEDS_REFRESH
-/* Called periodically to refresh the display. */
+/* Called periodically to refresh the display. Interrupt environment. */
 extern void disp_refresh(void);
 #endif /* DISP_NEEDS_REFRESH */
 

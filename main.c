@@ -72,9 +72,7 @@ static void adc_setup(void) {
   adc_power_on(ADC1);
 
   /* Wait for ADC starting up. */
-  for (i = 0; i < (rcc_apb1_frequency >> 6); i ++) {
-    asm("nop");
-  }
+  tick_delay(100);
 
   /* Establish LSB to uv mapping */
   while (!(PWR_CSR & PWR_CSR_VREFINTRDY));
@@ -134,26 +132,18 @@ static uint32_t adc_read(void) {
 /* END ADC */
 
 
-static void post_delay(void) {
-  static uint32_t i;
-
-  for (i = 0; i < (rcc_apb1_frequency >> 6); i ++) {
-    asm("nop");
-  }
-}
-
 static void __attribute__((unused)) disp_test(void) {
   while (true) {
     disp_update(01, false);
-    post_delay();
+    tick_delay(500);
     disp_update(23, true);
-    post_delay();
+    tick_delay(500);
     disp_update(45, false);
-    post_delay();
+    tick_delay(500);
     disp_update(67, true);
-    post_delay();
+    tick_delay(500);
     disp_update(89, false);
-    post_delay();
+    tick_delay(500);
   }
 }
 
@@ -168,9 +158,9 @@ int main(void) {
 
   /* Power on display test */
   disp_update( 8888, true);
-  post_delay();
+  tick_delay(500);
   disp_update(88888, true); /* Also tests rounding */
-  post_delay();
+  tick_delay(500);
   disp_update(mvolts, false);
 
   //disp_test(); // TODO: CONFIG_DO_DISPTEST
@@ -180,7 +170,7 @@ int main(void) {
     disp_update(mvolts, true);
     mvolts = adc_read();
     disp_update(mvolts, false);
-    post_delay();
+    tick_delay(500);
   }
 
   power_off();

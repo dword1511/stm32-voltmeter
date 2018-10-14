@@ -55,7 +55,7 @@ $(DMP): $(ELF)
 %.bin: %.elf
 	$(OBJCOPY) -S -O binary $< $@
 
-%.o: %.c lib/*.h config.mk
+%.o: %.c lib/*.h *.mk
 	$(CC) $(CFLAGS) $(CFGFLAGS) -c $< -o $@
 
 $(LIBOPENCM3):
@@ -87,6 +87,8 @@ flash-dfu: $(BIN)
 	dfu-util -a 0 -d 0483:df11 -s 0x08000000:leave -D $<
 
 flash-stlink: $(HEX)
+	st-flash erase
+	sleep 1
 	st-flash --reset --format ihex write $<
 
 flash-isp: $(HEX)

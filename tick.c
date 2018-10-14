@@ -30,23 +30,20 @@ static volatile uint32_t  uptime_ms = 0;
 
 
 void sys_tick_handler(void) {
-#ifdef TICK_AUTO_POWEROFF
   uptime_ms += SYSCLK_PERIOD_MS;
-#endif
+
 #ifdef DISP_NEEDS_REFRESH
   disp_refresh();
 #endif
 }
 
 void tick_setup(void) {
-#if defined(TICK_AUTO_POWEROFF) || defined(DISP_NEEDS_REFRESH)
   systick_set_clocksource(STK_CSR_CLKSOURCE_AHB);
   systick_clear();
 
   systick_set_reload(SYSCLK_PERIOD);
   systick_interrupt_enable();
   systick_counter_enable();
-#endif
 }
 
 bool tick_auto_poweroff(void) {
@@ -55,4 +52,14 @@ bool tick_auto_poweroff(void) {
 #else
   return false;
 #endif
+}
+
+void tick_delay(uint32_t ms) {
+  //uint32_t target1 = ((uptime_ms + ms) > SYSCLK_PERIOD_MS) ? (uptime_ms + ms - SYSCLK_PERIOD_MS) : 0;
+  //uint32_t target2 = uptime_ms + ms; /* Warps every 49 days... */
+  uint32_t target = uptime_ms + ms;
+
+  while (uptime_ms < target) {
+    asm("wfi");
+  }
 }
