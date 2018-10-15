@@ -15,6 +15,9 @@
 #define TICK_PWROFF_SECS  20
 */
 
+#ifndef TICK_HZ
+#define TICK_HZ           20
+#endif
 
 #if TICK_PWROFF_SECS != 0
 #define TICK_AUTO_POWEROFF

@@ -46,9 +46,9 @@ void adc_setup(void) {
   adc_disable_temperature_sensor();
 
   adc_power_off(ADC1);
-  adc_set_clk_source(ADC1, ADC_CLKSOURCE_PCLK_DIV4); /* Set ADC clock to 500 kHz */
+  adc_set_clk_source(ADC1, ADC_CLKSOURCE_PCLK_DIV4); /* Set ADC clock to ~15 kHz */
   adc_calibrate(ADC1);
-  adc_set_sample_time_on_all_channels(ADC1, ADC_SMPR_SMP_239DOT5); /* (239.5 + 1.5 ~= 2.1 ksps) */
+  adc_set_sample_time_on_all_channels(ADC1, ADC_SMPR_SMP_239DOT5); /* (239.5 + 1.5 ~= 62 sps) */
 
   adc_set_resolution(ADC1, ADC_RESOLUTION_12BIT);
   adc_set_right_aligned(ADC1);
@@ -76,7 +76,7 @@ uint32_t adc_read(void) {
     vref_lsbs += adc_read_raw(ADC_CHANNEL_VREF);
   }
   /* VDDA = 3.3 V (3,300,000 uV) x VREFINT_CAL / VREFINT_DATA; uV/LSB = VDDA / (2 ^ #BITS) */
-  /* NOTE: ST's manual has a typo here */
+  /* NOTE: ST's manual has a typo here. This is at 30 degree Celcius and 3.3V +/- 10mV. */
   muv_per_lsb = ((uint64_t)vref_muv) * 3300000 / (1 << 12) / vref_lsbs;
 
   for (i = 0; i < ADC_OVERSAMPLE; i ++) {
