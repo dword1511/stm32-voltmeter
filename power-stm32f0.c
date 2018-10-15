@@ -15,7 +15,7 @@
 void power_setup(void) {
   rcc_disable_rtc_clock();
 
-  /* Setup clock to around 32kHz */
+  /* Setup clock to around 62kHz, any lower LED segment display may not work. */
   /* MCU is on HSI after reset */
   /*
   rcc_osc_on(RCC_HSI);
