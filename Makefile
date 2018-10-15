@@ -5,6 +5,8 @@ SERIAL     ?= /dev/ttyUSB0
 
 ###############################################################################
 
+.SUFFIXES:
+
 AR          = $(CROSS)ar
 CC          = $(CROSS)gcc
 LD          = $(CROSS)ld
@@ -32,19 +34,18 @@ CFLAGS     += -fbranch-target-load-optimize
 # Architecture-dependent
 CFLAGS     += $(ARCH_FLAGS) -Ilibopencm3/include/ $(EXTRA_CFLAGS)
 
-# LDPATH is required for libopencm3 ld scripts to work.
+# LDPATH is required for libopencm3's ld scripts to work.
 LDPATH      = libopencm3/lib/
-LDFLAGS    += $(ARCH_FLAGS) -nostdlib -L$(LDPATH) -T$(LDSCRIPT) -Wl,-Map -Wl,$(MAP) -Wl,--gc-sections -Wl,--relax -flto
+LDFLAGS    += $(ARCH_FLAGS) -nostdlib -L$(LDPATH) -T$(LDSCRIPT) -Wl,-Map -Wl,$(MAP) -Wl,--gc-sections -Wl,--relax
 LDLIBS     += $(LIBOPENCM3) -lc -lgcc
 
-
-all: $(LIBOPENCM3) $(BIN) $(HEX) $(DMP) size
+default: $(BIN) $(HEX) $(DMP) size
 
 include config.mk
 include board.mk
 
-$(ELF): $(LDSCRIPT) $(OBJS)
-	$(CC) -o $@ $(LDFLAGS) $(OBJS) $(LDLIBS)
+$(ELF): $(LDSCRIPT) $(OBJS) $(LIBOPENCM3)
+	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $(OBJS) $(LDLIBS)
 
 $(DMP): $(ELF)
 	$(OBJDUMP) -d $< > $@
@@ -55,14 +56,13 @@ $(DMP): $(ELF)
 %.bin: %.elf
 	$(OBJCOPY) -S -O binary $< $@
 
-%.o: %.c lib/*.h *.mk
-	$(CC) $(CFLAGS) $(CFGFLAGS) -c $< -o $@
+%.o: %.c *.h *.mk $(LIBOPENCM3)
+	$(CC) $(CFLAGS) -c $< -o $@
 
 $(LIBOPENCM3):
 	# TODO: pass toolchain prefix
-	git submodule init
 	git submodule update --init
-	make -C libopencm3 CFLAGS="$(CFLAGS)" $(OPENCM3_MK) V=1
+	make -C libopencm3 CFLAGS="$(CFLAGS)" PREFIX=$(patsubst %-,%,$(CROSS)) $(OPENCM3_MK) V=1
 
 
 .PHONY: clean distclean size symbols flash

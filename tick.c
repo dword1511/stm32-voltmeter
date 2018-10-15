@@ -24,9 +24,7 @@
 #define SYSCLK_PERIOD     ((rcc_ahb_frequency) * (SYSCLK_PERIOD_MS) / 1000 - 1)
 
 
-#ifdef TICK_AUTO_POWEROFF
 static volatile uint32_t  uptime_ms = 0;
-#endif
 
 
 void sys_tick_handler(void) {
