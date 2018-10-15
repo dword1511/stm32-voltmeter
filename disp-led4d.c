@@ -40,6 +40,8 @@
 #endif
 #define DISP_EXTRAS     (4 * (100 - DISP_DUTY) / DISP_DUTY)
 
+#define DISP_GPIO_ALL   (DISP_COM_0 | DISP_COM_1 | DISP_COM_2 | DISP_COM_3 | 0x00ff)
+
 
 static const    uint8_t   segment_font[10] = {0x3f, 0x06, 0x5b, 0x4f, 0x66, 0x6d, 0x7d, 0x07, 0x7f, 0x6f}; /* LED font 0-9, active high */
 static const    uint16_t  coms[4]          = {
@@ -55,8 +57,8 @@ static volatile uint8_t   current_digit    = 0;
 
 void disp_setup(void) {
   gpio_port_write(DISP_GPIO_BANK, DISP_FONT_BLANK);
-  gpio_set_output_options(DISP_GPIO_BANK, GPIO_OTYPE_PP, GPIO_OSPEED_LOW, GPIO_ALL);
-  gpio_mode_setup(DISP_GPIO_BANK, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO_ALL);
+  gpio_set_output_options(DISP_GPIO_BANK, GPIO_OTYPE_PP, GPIO_OSPEED_LOW, DISP_GPIO_ALL);
+  gpio_mode_setup(DISP_GPIO_BANK, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, DISP_GPIO_ALL);
 }
 
 void disp_update(uint32_t voltage_mv, bool blinker) {
