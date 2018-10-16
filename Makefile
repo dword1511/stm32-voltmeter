@@ -63,7 +63,7 @@ $(DMP): $(ELF)
 $(LIBOPENCM3):
 	# TODO: pass toolchain prefix
 	git submodule update --init
-	make -C libopencm3 CFLAGS="$(CFLAGS)" PREFIX=$(patsubst %-,%,$(CROSS)) $(OPENCM3_MK) V=1
+	make -C libopencm3 CFLAGS="$(CFLAGS)" PREFIX=$(patsubst %-,%,$(CROSS)) $(OPENCM3_MK)
 
 
 .PHONY: clean distclean size symbols flash flash-dfu flash-stlink flash-isp debug

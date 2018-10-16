@@ -1,10 +1,11 @@
 LDSCRIPT = libopencm3/lib/stm32/l0/stm32l0xx6.ld
 
-CFLAGS  += -DDISP_PIN5_SEG=15 -DDISP_PIN6_SEG=14 -DDISP_PIN7_SEG=13 -DDISP_PIN8_SEG=12 -DDISP_PIN9_SEG=11 -DDISP_PIN10_SEG=10 -DDISP_PIN11_SEG=6 -DDISP_PIN12_SEG=5 \
+# COM in 0-to-3 (PIN1-to-PIN4) order. SEG in PIN6-to-PIN12 order.
+CFLAGS  += -DDISP_LCD_COMS='{2, 1, 0, 3}' -DDISP_LCD_SEGS='{15, 14, 13, 12, 11, 10, 6, 5}' \
            -DADC_INPUT_BANK=GPIOA -DADC_INPUT_PIN=GPIO0 -DADC_INPUT_CHANNEL=0
 
 
 include board-stm32l0.mk
-include disp-lcd-s401m16kr.mk
+include disp-l0lcd-s401m16kr.mk
 
 flash: flash-stlink
