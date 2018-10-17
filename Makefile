@@ -42,7 +42,6 @@ LDLIBS     += $(LIBOPENCM3) -lc -lgcc
 
 default: $(BIN) $(HEX) $(DMP) size
 
-include config.mk
 include board.mk
 
 $(ELF): $(LDSCRIPT) $(OBJS) $(LIBOPENCM3)
@@ -89,7 +88,6 @@ flash-dfu: $(BIN)
 
 flash-stlink: $(HEX)
 	@killall st-util || echo
-	@st-flash --reset erase
 	@st-flash --reset --format ihex write $<
 
 flash-isp: $(HEX)

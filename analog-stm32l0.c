@@ -10,17 +10,11 @@
 
 
 /*
-#define ADC_INPUT_BANK      GPIOB
-#define ADC_INPUT_PIN       GPIO1
-#define ADC_INPUT_CHANNEL   9
-#define ADC_OVERSAMPLE      16
+#define ADC_INPUT_BANK      GPIOA
+#define ADC_INPUT_PIN       GPIO0
+#define ADC_INPUT_CHANNEL   0
 */
 
-#ifdef ADC_OVERSAMPLE
-#if ADC_OVERSAMPLE != 16
-#error "ADC_OVERSAMPLE has to be 16!"
-#endif
-#endif
 
 #ifndef ADC_RDIV_LOWER
 /* ADC_RDIV_LOWER is inf */
@@ -30,8 +24,10 @@
 #define ADC_NUMERATOR       (ADC_RDIV_UPPER + ADC_RDIV_LOWER)
 #define ADC_DENUMERATOR     (ADC_RDIV_LOWER)
 
+#define ADC_OVERSAMPLE      16
 
-/* BEGIN: Missing bits */
+
+/* BEGIN: Missing bits. Remove when libopencm3 for L0 is fixed */
 #define PWR_CSR_VREFINTRDY      (1 << 3)
 
 #define ADC_CCR_LFMEN           (1 << 25)
@@ -123,7 +119,9 @@ static uint16_t adc_read_raw(uint8_t ch) {
   adc_set_regular_sequence(ADC1, 1, &ch);
   adc_start_conversion_regular(ADC1);
   while (!adc_eoc(ADC1)) {
-    asm("wfi"); /* Wait for one tick */
+    /* According to AN2834, we should avoid such change */
+    //asm("wfi"); /* Wait for one tick */
+    asm("nop");
   }
   return adc_read_regular(ADC1);
 }

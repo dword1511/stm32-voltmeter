@@ -10,7 +10,6 @@
 
 
 int main(void) {
-  bool     ticker = false;
   uint32_t mvolts = 0;
 
   power_setup();
@@ -28,20 +27,24 @@ int main(void) {
 
 #ifdef DISP_DO_TEST
   while (true) {
+    bool ticker = false;
+
     for (mvolts = 0; mvolts < 10000; mvolts += 1111) {
       disp_update(mvolts, ticker);
-      tick_delay(1500);
+      tick_delay(500);
       ticker = !ticker;
     }
+
     disp_update(100000, ticker); /* Test "E" */
+    tick_delay(500);
   }
 #else /* DISP_DO_TEST */
   /* Main loop */
   while (!tick_auto_poweroff()) {
-    disp_update(mvolts, ticker);
+    disp_update(mvolts, true);
     mvolts = adc_read();
-    disp_update(mvolts, ticker);
-    ticker = !ticker;
+    disp_update(mvolts, false);
+    tick_delay(500);
   }
 
   power_off();

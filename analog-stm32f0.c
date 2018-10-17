@@ -33,7 +33,9 @@ static uint16_t adc_read_raw(uint8_t ch) {
   adc_set_regular_sequence(ADC1, 1, &ch);
   adc_start_conversion_regular(ADC1);
   while (!adc_eoc(ADC1)) {
-    asm("wfi"); /* Wait for one tick */
+    /* According to AN2834, we should avoid such change */
+    //asm("wfi"); /* Wait for one tick */
+    asm("nop");
   }
   return adc_read_regular(ADC1);
 }

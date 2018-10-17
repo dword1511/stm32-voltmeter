@@ -1,0 +1,1 @@
+OBJS    += disp-stlcdc.o
