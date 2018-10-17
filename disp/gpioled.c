@@ -56,6 +56,9 @@ static volatile uint8_t   current_digit    = 0;
 
 
 void disp_setup(void) {
+  rcc_periph_clock_enable(RCC_GPIOA);
+  rcc_periph_clock_enable(RCC_GPIOB);
+
   gpio_port_write(DISP_GPIO_BANK, DISP_FONT_BLANK);
   gpio_set_output_options(DISP_GPIO_BANK, GPIO_OTYPE_PP, GPIO_OSPEED_LOW, DISP_GPIO_ALL);
   gpio_mode_setup(DISP_GPIO_BANK, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, DISP_GPIO_ALL);

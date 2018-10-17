@@ -40,9 +40,19 @@ LDPATH      = libopencm3/lib/
 LDFLAGS    += $(ARCH_FLAGS) -nostdlib -L$(LDPATH) -T$(LDSCRIPT) -Wl,-Map -Wl,$(MAP) -Wl,--gc-sections -Wl,--relax
 LDLIBS     += $(LIBOPENCM3) -lc -lgcc
 
+BOARDMK     = board.mk
+BOARDS     := $(sort $(notdir $(basename $(wildcard boards/*.mk))))
+
+
+ifeq (,$(wildcard ./board.mk))
+default:
+	@echo "Run \"make select\" to activiate one board."
+
+else
 default: $(BIN) $(HEX) $(DMP) size
 
-include board.mk
+include $(BOARDMK)
+
 
 $(ELF): $(LDSCRIPT) $(OBJS) $(LIBOPENCM3)
 	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $(OBJS) $(LDLIBS)
@@ -65,14 +75,7 @@ $(LIBOPENCM3):
 	make -C libopencm3 CFLAGS="$(CFLAGS)" PREFIX=$(patsubst %-,%,$(CROSS)) $(OPENCM3_MK)
 
 
-.PHONY: clean distclean size symbols flash flash-dfu flash-stlink flash-isp debug
-
-clean:
-	rm -f $(OBJS) $(ELF) $(HEX) $(BIN) $(MAP) $(DMP)
-
-distclean: clean
-	make -C libopencm3 clean
-	rm -f *.o *~ *.swp *.hex
+.PHONY: clean distclean select size symbols flash flash-dfu flash-stlink flash-isp debug
 
 # These targets want clean terminal output
 size: $(ELF)
@@ -97,3 +100,25 @@ debug: $(ELF) flash-stlink
 	@killall st-util || echo
 	@setsid st-util &
 	@-$(GDB) $< -q -ex 'target extended-remote localhost:4242'
+
+endif
+
+clean:
+	rm -f $(OBJS) $(ELF) $(HEX) $(BIN) $(MAP) $(DMP)
+
+distclean: clean
+	make -C libopencm3 clean
+	rm -f *.o *~ *.swp *.hex board.mk
+
+# Funky things can happen, reset terminal first.
+select: clean
+	@ \
+	reset; \
+	ITEMS=`n=0; for t in $(BOARDS); do echo $$n $$t; n=$$(($$n+1)); done`; \
+	exec 3>&1; \
+	CHOICE=$$(dialog --clear --no-shadow --title 'Board' --menu 'Choose one to build firmware for:' 12 40 4 $$ITEMS 2>&1 1>&3); \
+	exec 3>&-; clear; \
+	if [ -z "$${CHOICE}" ]; then exit 1; fi; \
+	TARGET=`echo $$ITEMS | cut -d ' ' -f $$(($$CHOICE*2+2))`; \
+	ln -sfT boards/$$TARGET.mk $(BOARDMK);\
+	echo "Board set to $$TARGET."

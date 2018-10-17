@@ -8,23 +8,8 @@
 #include "tick.h"
 #include "analog.h"
 
-
-/*
-#define ADC_INPUT_BANK      GPIOA
-#define ADC_INPUT_PIN       GPIO0
-#define ADC_INPUT_CHANNEL   0
-*/
-
-
-#ifndef ADC_RDIV_LOWER
-/* ADC_RDIV_LOWER is inf */
-#define ADC_RDIV_UPPER      0
-#define ADC_RDIV_LOWER      1
-#endif
-#define ADC_NUMERATOR       (ADC_RDIV_UPPER + ADC_RDIV_LOWER)
-#define ADC_DENUMERATOR     (ADC_RDIV_LOWER)
-
-#define ADC_OVERSAMPLE      16
+#define ANALOG_OVERSAMPLE       16
+#include "analog-common.h"
 
 
 /* BEGIN: Missing bits. Remove when libopencm3 for L0 is fixed */
@@ -115,23 +100,11 @@ void adc_set_regular_sequence(uint32_t adc, uint8_t length, uint8_t channel[]) {
 /* END: Missing bits */
 
 
-static uint16_t adc_read_raw(uint8_t ch) {
-  adc_set_regular_sequence(ADC1, 1, &ch);
-  adc_start_conversion_regular(ADC1);
-  while (!adc_eoc(ADC1)) {
-    /* According to AN2834, we should avoid such change */
-    //asm("wfi"); /* Wait for one tick */
-    asm("nop");
-  }
-  return adc_read_regular(ADC1);
-}
-
-void adc_setup(void) {
-  gpio_mode_setup(ADC_INPUT_BANK, GPIO_MODE_ANALOG, GPIO_PUPD_NONE, ADC_INPUT_PIN);
+void analog_setup(void) {
+  __analog_setup_gpio();
 
   rcc_periph_clock_enable(RCC_ADC1);
   adc_enable_vrefint();
-  //adc_disable_temperature_sensor();
 
   adc_power_off(ADC1);
   ADC_CCR(ADC1) |= ADC_CCR_LFMEN; /* Mandatory for fADC < 3.5MHz */
@@ -147,6 +120,7 @@ void adc_setup(void) {
   //ADC_CFGR1(ADC1) |= ADC_CFGR1_AUTDLY; /* Do not start conversion until DR is read. Avoids race conditions. */
   //adc_disable_analog_watchdog(ADC1);
   //adc_disable_external_trigger_regular(ADC1);
+  //adc_disable_temperature_sensor();
 
   adc_calibrate(ADC1);
   adc_power_on(ADC1);
@@ -158,16 +132,6 @@ void adc_setup(void) {
   while (!(PWR_CSR & PWR_CSR_VREFINTRDY));
 }
 
-uint32_t adc_read(void) {
-  uint16_t  muv_per_lsb;
-  uint32_t  sample, vref_muv, vref_lsbs;
-
-  /* Establish LSB to uv mapping */
-  vref_muv = ST_VREFINT_CAL * ADC_OVERSAMPLE;
-  vref_lsbs = adc_read_raw(ADC_CHANNEL_VREF);
-  /* VDDA = 3.0 V (3,000,000 uV) x VREFINT_CAL / VREFINT_DATA; uV/LSB = VDDA / (2 ^ #BITS) */
-  muv_per_lsb = ((uint64_t)vref_muv) * 3000000 / (1 << 12) / vref_lsbs;
-
-  sample = adc_read_raw(ADC_INPUT_CHANNEL);
-  return ((uint64_t)sample) * muv_per_lsb * ADC_NUMERATOR / ADC_OVERSAMPLE / 1000 / ADC_DENUMERATOR;
+uint32_t analog_read(void) {
+  return __analog_get_mv(__analog_read_raw(ADC_CHANNEL_VREF), __analog_read_raw(ANALOG_INPUT_CHANNEL));
 }

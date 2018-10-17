@@ -19,6 +19,7 @@ void power_off(void) {
   gpio_mode_setup(GPIOC, GPIO_MODE_ANALOG, GPIO_PUPD_NONE, GPIO_ALL);
   gpio_mode_setup(GPIOD, GPIO_MODE_ANALOG, GPIO_PUPD_NONE, GPIO_ALL);
 
+#ifdef RCC_CSR_RTCEN
   rcc_periph_clock_enable(RCC_PWR);
   pwr_disable_power_voltage_detect();
   pwr_disable_backup_domain_write_protect();
@@ -26,6 +27,7 @@ void power_off(void) {
   rtc_wait_for_synchro();
   rcc_osc_off(RCC_LSI);
   pwr_enable_backup_domain_write_protect();
+#endif
 
   /* According to ST App note... */
   SCB_SCR |= SCB_SCR_SLEEPDEEP;

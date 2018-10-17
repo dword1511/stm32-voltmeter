@@ -1,1 +1,0 @@
-boards/board-fieldprobe.mk

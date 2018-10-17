@@ -6,4 +6,4 @@ LIBOPENCM3  = libopencm3/lib/libopencm3_stm32f0.a
 
 OBJS       += power-stm32f0.o analog-stm32f0.o
 
-CFLAGS     += -DADC_OVERSAMPLE=16
+CFLAGS     += -DANALOG_OVERSAMPLE=16 -DANALOG_VCAL_MUV=3300000

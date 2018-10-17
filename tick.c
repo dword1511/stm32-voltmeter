@@ -7,7 +7,7 @@
 
 
 #include "tick.h"
-#include "disp.h"
+#include "disp/disp.h"
 
 
 /*

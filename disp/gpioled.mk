@@ -1,4 +1,5 @@
-OBJS    += disp-led4d.o
+# TODO: extend to multiple digit
+OBJS    += disp/gpioled.o
 
 # Tell tick system that display needs refresh
 # 400HZ tick = 100HZ refresh rate (as we have 4 digits)

@@ -2,8 +2,8 @@
 #define __VOLTMETER_ANALOG_H__
 
 /* Setup ADC. */
-extern void     adc_setup(void);
+extern void     analog_setup(void);
 /* Do one measurement. */
-extern uint32_t adc_read(void);
+extern uint32_t analog_read(void);
 
 #endif /* __VOLTMETER_ANALOG_H__ */

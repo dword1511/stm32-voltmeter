@@ -30,7 +30,4 @@ void power_setup(void) {
 
   rcc_apb1_frequency  = F_HSI / F_DIV;
   rcc_ahb_frequency   = F_HSI / F_DIV;
-
-  rcc_periph_clock_enable(RCC_GPIOA);
-  rcc_periph_clock_enable(RCC_GPIOB);
 }

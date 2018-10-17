@@ -64,6 +64,7 @@ void disp_setup(void) {
   rcc_periph_clock_enable(RCC_GPIOC);
   rcc_periph_clock_enable(RCC_GPIOD);
 
+  // TODO: cache IO operations
   for (i = 0; i < DISP_LCD_NCOMS; i ++) {
     uint32_t bank = lcdc_coms_bank[lcdc_coms[i]];
     uint16_t pin  = lcdc_coms_pin [lcdc_coms[i]];
