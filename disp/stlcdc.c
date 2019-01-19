@@ -8,9 +8,10 @@
 
 /* STM32L0's LCD driver isn't there yet... But it is identical to L1 */
 #ifdef STM32L0
-#define RCC_CSR_RTCSEL_HSI -1
-#endif
 #include <libopencm3/stm32/l1/lcd.h>
+#else
+#include <libopencm3/stm32/lcd.h>
+#endif
 
 
 #include "disp.h"
@@ -106,6 +107,9 @@ void disp_setup(void) {
   RCC_CSR |= RCC_CSR_RTCEN;
   rtc_wait_for_synchro();
 
+  /* NOTE: leave RTC domain write-protect disabled, otherwise cannot update LCD! */
+  rcc_periph_clock_disable(RCC_PWR);
+
   rcc_periph_clock_enable(RCC_LCD);
   lcd_set_duty(LCD_CR_DUTY_1_4);
   lcd_set_bias(LCD_CR_BIAS_1_3);
@@ -117,9 +121,6 @@ void disp_setup(void) {
   lcd_wait_for_step_up_ready();
   /* LCD_FCR is in RTC domain and requires synchronization */
   while ((LCD_SR & LCD_SR_FCRSF) == 0);
-
-  /* NOTE: leave RTC domain write-protect disabled, otherwise cannot update LCD! */
-  rcc_periph_clock_disable(RCC_PWR);
 }
 
 void disp_update(uint32_t voltage_mv, bool blinker) {

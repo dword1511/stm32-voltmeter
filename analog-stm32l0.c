@@ -56,11 +56,11 @@
 #define ADC_RESOLUTION_6BIT     ADC_CFGR1_RES_6_BIT
 
 
-static void adc_set_clk_source(uint32_t adc, uint32_t source) {
+static void __adc_set_clk_source(uint32_t adc, uint32_t source) {
   ADC_CFGR2(adc) = ((ADC_CFGR2(adc) & ~ADC_CFGR2_CKMODE) | source);
 }
 
-void adc_set_sample_time_on_all_channels(uint32_t adc, uint8_t time) {
+static void __adc_set_sample_time_on_all_channels(uint32_t adc, uint8_t time) {
   ADC_SMPR1(adc) = time & ADC_SMPR1_SMP;
 }
 
@@ -104,12 +104,11 @@ void analog_setup(void) {
   __analog_setup_gpio();
 
   rcc_periph_clock_enable(RCC_ADC1);
-  adc_enable_vrefint();
 
   adc_power_off(ADC1);
   ADC_CCR(ADC1) |= ADC_CCR_LFMEN; /* Mandatory for fADC < 3.5MHz */
-  adc_set_clk_source(ADC1, ADC_CLKSOURCE_PCLK_DIV4); /* Set ADC clock to ~15 kHz */
-  adc_set_sample_time_on_all_channels(ADC1, ADC_SMPR_SMP_160DOT5CYC); /* (160.5 + 1.5 ~= 100 sps) */
+  __adc_set_clk_source(ADC1, ADC_CLKSOURCE_PCLK);
+  __adc_set_sample_time_on_all_channels(ADC1, ADC_SMPR_SMP_160DOT5CYC); /* (160.5 + 1.5 ~= 400 sps) */
 
   /* Setup 16X HW oversample */
   ADC_CFGR2(ADC1) = (ADC_CFGR2(ADC1) & (~ADC_CFGR2_OVSS) & (~ADC_CFGR2_OVSR) & (~ADC_CFGR2_TOVS)) | ADC_CFGR2_OVSS_NOSHIFT | ADC_CFGR2_OVSR_16X | ADC_CFGR2_OVSE;
@@ -122,16 +121,33 @@ void analog_setup(void) {
   //adc_disable_external_trigger_regular(ADC1);
   //adc_disable_temperature_sensor();
 
+  rcc_periph_clock_disable(RCC_ADC1);
+}
+
+static void __analog_enable(void) {
+  rcc_periph_clock_enable(RCC_ADC1);
+  adc_enable_vrefint();
+
   adc_calibrate(ADC1);
   adc_power_on(ADC1);
-
-  /* Wait for ADC to start up. */
-  tick_delay(100);
 
   /* Wait for internal reference to start up. */
   while (!(PWR_CSR & PWR_CSR_VREFINTRDY));
 }
 
+static void __analog_disable(void) {
+  adc_power_off(ADC1);
+  rcc_periph_clock_disable(RCC_ADC1);
+}
+
 uint32_t analog_read(void) {
-  return __analog_get_mv(__analog_read_raw(ADC_CHANNEL_VREF), __analog_read_raw(ANALOG_INPUT_CHANNEL));
+  uint16_t vref_digits;
+  uint32_t mv;
+
+  __analog_enable();
+  vref_digits = __analog_read_raw(ADC_CHANNEL_VREF);
+  adc_disable_vrefint();
+  mv = __analog_get_mv(vref_digits, __analog_read_raw(ANALOG_INPUT_CHANNEL));
+  __analog_disable();
+  return mv;
 }

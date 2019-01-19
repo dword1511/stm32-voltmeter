@@ -20,9 +20,9 @@ int main(void) {
 
   /* Power on display test */
   disp_update( 8888, true);
-  tick_delay(500);
+  tick_delay(1000);
   disp_update(88888, true); /* Also tests rounding */
-  tick_delay(500);
+  tick_delay(1000);
   disp_update(mvolts, false);
 
 #ifdef DISP_DO_TEST
@@ -44,7 +44,7 @@ int main(void) {
     disp_update(mvolts, true);
     mvolts = analog_read();
     disp_update(mvolts, false);
-    tick_delay(500);
+    tick_delay(800);
   }
 
   power_off();

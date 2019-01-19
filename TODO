@@ -1,2 +1,4 @@
 * F0 ADC to sequence mode for over sampling
 * More generic gpioled driver
+* Switch VINTREF during measurements
+* Use LPTIM instead of SYSTICK

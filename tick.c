@@ -16,7 +16,7 @@
 */
 
 #ifndef TICK_HZ
-#define TICK_HZ           20
+#define TICK_HZ           10
 #endif
 
 #if TICK_PWROFF_SECS != 0
@@ -56,8 +56,6 @@ bool tick_auto_poweroff(void) {
 }
 
 void tick_delay(uint32_t ms) {
-  //uint32_t target1 = ((uptime_ms + ms) > SYSCLK_PERIOD_MS) ? (uptime_ms + ms - SYSCLK_PERIOD_MS) : 0;
-  //uint32_t target2 = uptime_ms + ms; /* Warps every 49 days... */
   uint32_t target = uptime_ms + ms;
 
   while (uptime_ms < target) {

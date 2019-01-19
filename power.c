@@ -19,8 +19,9 @@ void power_off(void) {
   gpio_mode_setup(GPIOC, GPIO_MODE_ANALOG, GPIO_PUPD_NONE, GPIO_ALL);
   gpio_mode_setup(GPIOD, GPIO_MODE_ANALOG, GPIO_PUPD_NONE, GPIO_ALL);
 
-#ifdef RCC_CSR_RTCEN
   rcc_periph_clock_enable(RCC_PWR);
+
+#ifdef RCC_CSR_RTCEN
   pwr_disable_power_voltage_detect();
   pwr_disable_backup_domain_write_protect();
   RCC_CSR &= ~RCC_CSR_RTCEN;

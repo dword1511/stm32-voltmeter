@@ -10,3 +10,4 @@
 *.out
 
 /board.mk
+/.dep

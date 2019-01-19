@@ -1,47 +1,69 @@
 PROGRAM     = stm32-voltmeter
-OBJS        = main.o tick.o power.o
+SRCS        = main.c tick.c power.c
 CROSS      ?= arm-none-eabi-
-SERIAL     ?= /dev/ttyUSB0
 
 ###############################################################################
 
 .SUFFIXES:
 
-AR          = $(CROSS)ar
-CC          = $(CROSS)gcc
-LD          = $(CROSS)ld
-OBJCOPY     = $(CROSS)objcopy
-OBJDUMP     = $(CROSS)objdump
-SIZE        = $(CROSS)size
-NM          = $(CROSS)nm
-#GDB         = $(CROSS)gdb
+AR         := $(CROSS)ar
+CC         := $(CROSS)gcc
+LD         := $(CROSS)ld
+OBJCOPY    := $(CROSS)objcopy
+OBJDUMP    := $(CROSS)objdump
+SIZE       := $(CROSS)size
+NM         := $(CROSS)nm
 GDB         = gdb-multiarch
 
-ELF         = $(PROGRAM).elf
-BIN         = $(PROGRAM).bin
-HEX         = $(PROGRAM).hex
-MAP         = $(PROGRAM).map
-DMP         = $(PROGRAM).out
+ELF        := $(PROGRAM).elf
+BIN        := $(PROGRAM).bin
+HEX        := $(PROGRAM).hex
+MAP        := $(PROGRAM).map
+DMP        := $(PROGRAM).out
 
 
-CFLAGS     += -O2 -Wall -g3 -gdwarf
-# Turning aggressive loop optimizations off since it does not work for loops longer than certain iterations
-CFLAGS     += -fno-common -ffunction-sections -fdata-sections -fno-aggressive-loop-optimizations
-CFLAGS     += -fbranch-target-load-optimize
-# Aggressive optimizations
-#CFLAGS     += -O3 -fgcse-sm -fgcse-las -fgcse-after-reload -funroll-loops -funswitch-loops
-# Actually won't wotk
-#CFLAGS     += -flto -fipa-pta
+TOPDIR     := $(shell pwd)
+DEPDIR     := $(TOPDIR)/.dep
+OBJS        = $(SRCS:.c=.o)
+
+# Debugging
+CFLAGS     += -Wall -Wdouble-promotion -gdwarf-4 -g3
+# Optimizations
+# NOTE: without optimization everything will fail... Computational power is marginal.
+CFLAGS     += -O3 -fbranch-target-load-optimize -fipa-pta -frename-registers -fgcse-sm -fgcse-las -fsplit-loops -fstdarg-opt
+# Use these for debugging-friendly binary
+#CFLAGS     += -O0
+#CFLAGS     += -Og
+# Disabling aggressive loop optimizations since it does not work for loops longer than certain iterations
+CFLAGS     += -fno-aggressive-loop-optimizations
+# Aggressive optimizations (unstable or causes huge binaries, e.g. peel-loops gives huge gpio_mode_setup, which is rarely used)
+#CFLAGS     += -finline-functions -funroll-loops -fbranch-target-load-optimize2
 # Architecture-dependent
 CFLAGS     += $(ARCH_FLAGS) -Ilibopencm3/include/ $(EXTRA_CFLAGS)
+# For MCUs
+CFLAGS     += -fsingle-precision-constant -ffast-math -flto --specs=nano.specs -fno-common -ffunction-sections -fdata-sections
+
+# Generate dependency information
+CFLAGS     += -MT $@ -MMD -MP -MF $(DEPDIR)/$*.Td
+$(shell mkdir -p $(DEPDIR) >/dev/null)
+PRECOMPILE  = mkdir -p $(dir $(DEPDIR)/$*.Td)
+POSTCOMPILE = mv -f $(DEPDIR)/$*.Td $(DEPDIR)/$*.d && touch $@
 
 # LDPATH is required for libopencm3's ld scripts to work.
-LDPATH      = libopencm3/lib/
-LDFLAGS    += $(ARCH_FLAGS) -nostdlib -L$(LDPATH) -T$(LDSCRIPT) -Wl,-Map -Wl,$(MAP) -Wl,--gc-sections -Wl,--relax
+LDPATH     := libopencm3/lib/
+# NOTE: the rule will ensure CFLAGS are added during linking
+LDFLAGS    += -nostdlib -L$(LDPATH) -T$(LDSCRIPT) -Wl,-Map -Wl,$(MAP) -Wl,--gc-sections -Wl,--relax
 LDLIBS     += $(LIBOPENCM3) -lc -lgcc
+
 
 BOARDMK     = board.mk
 BOARDS     := $(sort $(notdir $(basename $(wildcard boards/*.mk))))
+
+
+# Pass these to libopencm3's Makefile
+PREFIX     := $(patsubst %-,%,$(CROSS))
+V          := 0
+export FP_FLAGS CFLAGS PREFIX V
 
 
 ifeq (,$(wildcard ./board.mk))
@@ -54,7 +76,7 @@ default: $(BIN) $(HEX) $(DMP) size
 include $(BOARDMK)
 
 
-$(ELF): $(LDSCRIPT) $(OBJS) $(LIBOPENCM3)
+$(ELF): $(LDSCRIPT) $(OBJS) $(LIBOPENCM3) Makefile $(BOARDMK)
 	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $(OBJS) $(LDLIBS)
 
 $(DMP): $(ELF)
@@ -66,16 +88,20 @@ $(DMP): $(ELF)
 %.bin: %.elf
 	$(OBJCOPY) -S -O binary $< $@
 
-%.o: %.c *.h *.mk $(LIBOPENCM3)
+%.o: %.c $(LIBOPENCM3) Makefile $(BOARDMK)
+	$(PRECOMPILE)
 	$(CC) $(CFLAGS) -c $< -o $@
+	$(POSTCOMPILE)
 
-$(LIBOPENCM3):
-	# TODO: pass toolchain prefix
+# NOTE: libopencm3's Makefile is unaware of top-level Makefile changes, so force remake
+# ld script also obtained here. However, has to touch it to prevent unnecessary remakes
+$(LIBOPENCM3) $(LDSCRIPT): Makefile $(BOARDMK)
 	git submodule update --init
-	make -C libopencm3 CFLAGS="$(CFLAGS)" PREFIX=$(patsubst %-,%,$(CROSS)) $(OPENCM3_MK)
+	make -B -C libopencm3 CFLAGS="$(CFLAGS)" PREFIX=$(patsubst %-,%,$(CROSS)) $(OPENCM3_MK)
+	touch $(LDSCRIPT)
 
 
-.PHONY: clean distclean select size symbols flash flash-dfu flash-stlink flash-isp debug
+.PHONY: clean distclean select size symbols symbols_bss flash flash-dfu flash-stlink flash-isp debug
 
 # These targets want clean terminal output
 size: $(ELF)
@@ -85,6 +111,9 @@ size: $(ELF)
 
 symbols: $(ELF)
 	@$(NM) --demangle --size-sort -S $< | grep -v ' [bB] '
+
+symbols_bss: $(ELF)
+	@$(NM) --demangle --size-sort -S $< | grep ' [bB] '
 
 flash-dfu: $(BIN)
 	@dfu-util -a 0 -d 0483:df11 -s 0x08000000:leave -D $<
@@ -101,10 +130,16 @@ debug: $(ELF) flash-stlink
 	@setsid st-util &
 	@-$(GDB) $< -q -ex 'target extended-remote localhost:4242'
 
+# Dependencies
+$(DEPDIR)/%.d:
+.PRECIOUS: $(DEPDIR)/%.d
+include $(wildcard $(patsubst %,$(DEPDIR)/%.d,$(basename $(SRCS))))
+
 endif
 
 clean:
 	rm -f $(OBJS) $(ELF) $(HEX) $(BIN) $(MAP) $(DMP)
+	rm -rf $(DEPDIR)
 
 distclean: clean
 	make -C libopencm3 clean
